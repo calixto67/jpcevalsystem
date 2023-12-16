@@ -117,73 +117,75 @@ function ordinal_suffix($num){
 				</div>
 				<div class="row">
 				<?php
-					$resEvalInfo = $conn->query("SELECT * FROM `restriction_list` where faculty_id = {$_SESSION['login_id']}");
-					if(!$resEvalInfo){
-						die('Error in query: ' . $conn->error);
-					}
+					if($_GET['fid'] != null){
+						$resEvalInfo = $conn->query("SELECT * FROM `restriction_list` where faculty_id = {$_GET['fid']}");
+						if(!$resEvalInfo){
+							die('Error in query: ' . $conn->error);
+						}
 
-					$row = $resEvalInfo->fetch_assoc();					
-					$result  =  $conn->query("SELECT GROUP_CONCAT(feedback SEPARATOR ' ') AS concatenated_feedback FROM evaluation_list where faculty_id = {$_SESSION['login_id']} and subject_id = {$row['subject_id']} and class_id = {$row['class_id']}");
-					
-					// Check for errors
-					if (!$result) {
-						die('Error in query: ' . $conn->error);
-					}
-					
-					$row = $result->fetch_assoc();
-					$concatenatedFeedback = $row['concatenated_feedback'];
-					
-					
-					if($concatenatedFeedback !== null){
-						$url = "http://text-processing.com/api/sentiment/";
+						$row = $resEvalInfo->fetch_assoc();					
+						$result  =  $conn->query("SELECT GROUP_CONCAT(feedback SEPARATOR ' ') AS concatenated_feedback FROM evaluation_list where faculty_id = {$_GET['fid']} and subject_id = {$row['subject_id']} and class_id = {$row['class_id']}");
+						
+						// Check for errors
+						if (!$result) {
+							die('Error in query: ' . $conn->error);
+						}
+						
+						$row = $result->fetch_assoc();
+						$concatenatedFeedback = $row['concatenated_feedback'];
+						
+						
+						if($concatenatedFeedback !== null){
+							$url = "http://text-processing.com/api/sentiment/";
 
-						$data = array('text' => $concatenatedFeedback);
+							$data = array('text' => $concatenatedFeedback);
 
-						$options = array(
-							'http' => array(
-								'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-								'method'  => 'POST',
-								'content' => http_build_query($data),
-							),
-						);
+							$options = array(
+								'http' => array(
+									'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+									'method'  => 'POST',
+									'content' => http_build_query($data),
+								),
+							);
 
-						$context  = stream_context_create($options);
-						$response = file_get_contents($url, false, $context);
+							$context  = stream_context_create($options);
+							$response = file_get_contents($url, false, $context);
 
-						// Check for errors during the HTTP request
-						if ($response === false) {
-							echo 'Error during the HTTP request';
-							// Handle the error as needed
-						} else {
-							// Decode the JSON response
-							$result = json_decode($response, true);
-
-							// Check if sentiment is present in the response
-							if (isset($result['label'])) {
-								$sentiment = $result['label'];
-								$score = isset($result['probability'][$sentiment]) ? $result['probability'][$sentiment] : 'N/A';
-								// Display icons based on sentiment
-								echo '<div style="margin-left: 41%;"><center>';
-								switch ($sentiment) {
-									case 'pos':
-										echo '<img src="positive_icon.png" alt="Positive" style="display: inline-block;">';
-										echo '<p>Result: Positive</p>';
-										break;
-									case 'neg':
-										echo '<img src="negative_icon.png" alt="Negative" style="display: inline-block;">';
-										echo '<p>Result: Negative</p>';
-										break;
-									case 'neutral':
-										echo '<img src="neutral_icon.png" alt="Neutral" style="display: inline-block;">';
-										echo '<p>Result: Neutral</p>';
-										break;
-									default:
-										echo 'Unknown sentiment';
-								}
-								echo '<p>Sentiment Score: ' . number_format($score, 2) . '%</p></center>';
-								echo '</div>';
+							// Check for errors during the HTTP request
+							if ($response === false) {
+								echo 'Error during the HTTP request';
+								// Handle the error as needed
 							} else {
-								echo 'Error in sentiment analysis response';
+								// Decode the JSON response
+								$result = json_decode($response, true);
+
+								// Check if sentiment is present in the response
+								if (isset($result['label'])) {
+									$sentiment = $result['label'];
+									$score = isset($result['probability'][$sentiment]) ? $result['probability'][$sentiment] : 'N/A';
+									// Display icons based on sentiment
+									echo '<div style="margin-left: 41%;"><center>';
+									switch ($sentiment) {
+										case 'pos':
+											echo '<img src="positive_icon.png" alt="Positive" style="display: inline-block;">';
+											echo '<p>Result: Positive</p>';
+											break;
+										case 'neg':
+											echo '<img src="negative_icon.png" alt="Negative" style="display: inline-block;">';
+											echo '<p>Result: Negative</p>';
+											break;
+										case 'neutral':
+											echo '<img src="neutral_icon.png" alt="Neutral" style="display: inline-block;">';
+											echo '<p>Result: Neutral</p>';
+											break;
+										default:
+											echo 'Unknown sentiment';
+									}
+									echo '<p>Sentiment Score: ' . number_format($score, 2) . '%</p></center>';
+									echo '</div>';
+								} else {
+									echo 'Error in sentiment analysis response';
+								}
 							}
 						}
 					}
@@ -229,6 +231,7 @@ function ordinal_suffix($num){
 			if($(this).val() > 0){
 				window.history.pushState({}, null, './index.php?page=report&fid='+$(this).val());
 				load_class();
+				window.location.reload();
 				$('#sentiment').show();
 			} else {
 				$('#sentiment').hide();
