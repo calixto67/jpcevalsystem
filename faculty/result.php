@@ -137,7 +137,7 @@ function ordinal_suffix($num){
 						} else {
 							// Decode the JSON response
 							$result = json_decode($response, true);
-	
+							
 							// Check if sentiment is present in the response
 							if (isset($result['label'])) {
 								$sentiment = $result['label'];
